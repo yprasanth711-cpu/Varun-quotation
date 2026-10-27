@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Varun Motors Rajahmundry - Quotation Generator</title>
+  <style>
+    :root {
+      --primary: #003366;
+      --secondary: #e65100;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --border: #dcdcdc;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); margin: 0; padding: 12px; color: #222; }
+    .container { max-width: 650px; margin: 0 auto; background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+    .header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 14px; }
+    .header h2 { margin: 0; color: var(--primary); font-size: 1.3rem; text-transform: uppercase; }
+    .header p { margin: 3px 0 0; font-size: 0.8rem; color: #666; font-weight: 500; }
+    .field-group { margin-bottom: 12px; }
+    label { font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 4px; color: #333; }
+    select, input[type="text"], input[type="number"] {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; outline: none; background: #fff;
+    }
+    select:focus, input:focus { border-color: var(--primary); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .breakdown-card { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 14px; }
+    .breakdown-card h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--primary); }
+    .item-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e5e5e5; font-size: 0.88rem; }
+    .item-row:last-child { border-bottom: none; }
+    .item-row label { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; cursor: pointer; }
+    .item-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); }
+    .item-val { font-weight: 600; min-width: 80px; text-align: right; }
+    .total-box { margin-top: 14px; padding: 12px; background: #eef4fb; border: 1px solid #c2d8f2; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 1.15rem; font-weight: 700; color: var(--primary); }
+    .actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn { flex: 1; padding: 11px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: center; }
+    .btn-print { background: var(--primary); color: #fff; }
+    .btn-reset { background: #e0e0e0; color: #333; }
+    .footer-note { font-size: 0.72rem; color: #777; margin-top: 14px; text-align: center; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
+      .actions, select, .data-edit-hint { display: none !important; }
+      .print-only-title { display: block !important; font-size: 1rem; font-weight: bold; margin-bottom: 8px; }
+    }
+    .print-only-title { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2>VARUN MOTORS RAJAHMUNDRY</h2>
+    <p>Maruti Suzuki Arena Authorized Dealer | Tentative Price List</p>
+    <p>Contact: 9885742111 | GST: 37AABCV2471Q1ZR</p>
+  </div>
+
+  <div class="grid-2 field-group">
+    <div>
+      <label>Customer Name</label>
+      <input type="text" id="custName" placeholder="Enter customer name" />
+    </div>
+    <div>
+      <label>Customer Mobile</label>
+      <input type="text" id="custPhone" placeholder="10-digit number" />
+    </div>
+  </div>
+
+  <div class="grid-2 field-group">
+    <div>
+      <label>Select Car Model</label>
+      <select id="modelSelect" onchange="populateVariants()"></select>
+    </div>
+    <div>
+      <label>Select Variant</label>
+      <select id="variantSelect" onchange="calculateQuotation()"></select>
+    </div>
+  </div>
+
+  <div class="print-only-title" id="printCarTitle"></div>
+
+  <div class="breakdown-card">
+    <h3>Price Components & Optional Add-ons</h3>
+
+    <div class="item-row">
+      <span>Ex-Showroom Price</span>
+      <span class="item-val" id="dispExShowroom">₹0</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkTax" checked onchange="calculateQuotation()" /> Road Tax + Cess (Life Tax)</label>
+      <span class="item-val" id="dispTax">₹0</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkIns" checked onchange="calculateQuotation()" /> Maruti Insurance (1Y OD + 3Y TP)</label>
+      <span class="item-val" id="dispIns">₹0</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkPr" checked onchange="calculateQuotation()" /> PR Charges & Hypothecation Fee</label>
+      <span class="item-val" id="dispPr">₹2,035</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkFastag" checked onchange="calculateQuotation()" /> FASTag Fee</label>
+      <span class="item-val" id="dispFastag">₹650</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkEw" checked onchange="calculateQuotation()" /> 6Y Extended Warranty & MSP</label>
+      <span class="item-val" id="dispEw">₹0</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkMsga" checked onchange="calculateQuotation()" /> MSGA Basic Accessory Kit</label>
+      <span class="item-val" id="dispMsga">₹0</span>
+    </div>
+
+    <div class="item-row">
+      <label><input type="checkbox" id="chkMsr" checked onchange="calculateQuotation()" /> MSR / Loyalty Charges</label>
+      <span class="item-val" id="dispMsr">₹885</span>
+    </div>
+
+    <div class="item-row">
+      <label style="color: var(--secondary);">Special Dealer Offer / Discount (-)</label>
+      <input type="number" id="inpDiscount" value="0" style="width: 110px; padding: 4px 6px; text-align: right;" oninput="calculateQuotation()" />
+    </div>
+  </div>
+
+  <div class="total-box">
+    <span>Net On-Road Payable:</span>
+    <span id="dispTotal">₹0</span>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-print" onclick="window.print()">Print / Save as PDF</button>
+    <button class="btn btn-reset" onclick="resetForm()">Reset</button>
+  </div>
+
+  <div class="footer-note">
+    * Prices prevailing at delivery apply. Permanent registration & extended warranty are optional.
+  </div>
+</div>
+
+<script>
+// --- MASTER PRICING DATA (Extracted from 21-09-2026 Sheet) ---
+// You can edit or add models directly inside this JavaScript object anytime.
+const PRICING_DATA = {
+  "ALTO K10": [
+    { name: "LXI", ex: 399852, tax: 57179, ins: 22623, ew: 11717, kit: 5397 },
+    { name: "VXI", ex: 452353, tax: 64686, ins: 25743, ew: 12437, kit: 5397 },
+    { name: "VXI+", ex: 499852, tax: 71479, ins: 26942, ew: 13121, kit: 5397 },
+    { name: "VXI AGS", ex: 497353, tax: 71121, ins: 26795, ew: 13605, kit: 5397 },
+    { name: "VXI+ AGS", ex: 544853, tax: 83907, ins: 28825, ew: 14290, kit: 5397 },
+    { name: "VXI CNG", ex: 534352, tax: 82290, ins: 37100, ew: 14731, kit: 5397 }
+  ],
+  "S-PRESSO": [
+    { name: "LXI", ex: 382353, tax: 54676, ins: 30137, ew: 11717, kit: 5175 },
+    { name: "VXI", ex: 432353, tax: 61826, ins: 32921, ew: 12237, kit: 5175 },
+    { name: "VXI+", ex: 482353, tax: 68976, ins: 33956, ew: 12909, kit: 5175 },
+    { name: "VXI AGS", ex: 477352, tax: 68261, ins: 34705, ew: 13405, kit: 5175 },
+    { name: "VXI+ AGS", ex: 527352, tax: 81212, ins: 35738, ew: 14078, kit: 5175 },
+    { name: "LXI CNG", ex: 464352, tax: 66402, ins: 36436, ew: 13877, kit: 5175 },
+    { name: "VXI CNG", ex: 514352, tax: 79210, ins: 37177, ew: 14337, kit: 5175 }
+  ],
+  "EECO": [
+    { name: "5 STR STD", ex: 528352, tax: 81366, ins: 40469, ew: 13357, kit: 9353 },
+    { name: "5 STR A/C", ex: 561252, tax: 86433, ins: 43922, ew: 14195, kit: 9353 },
+    { name: "6 STR STD", ex: 554853, tax: 85447, ins: 41343, ew: 14030, kit: 9353 },
+    { name: "5 STR AC CNG", ex: 645753, tax: 99446, ins: 49712, ew: 16296, kit: 9353 }
+  ],
+  "CELERIO": [
+    { name: "LXI", ex: 469852, tax: 67189, ins: 32515, ew: 13216, kit: 5073 },
+    { name: "VXI", ex: 518353, tax: 79826, ins: 33661, ew: 14974, kit: 5073 },
+    { name: "ZXI", ex: 573353, tax: 88296, ins: 34933, ew: 16095, kit: 5073 },
+    { name: "ZXI+", ex: 630352, tax: 97074, ins: 36482, ew: 16996, kit: 5073 },
+    { name: "VXI AGS", ex: 563352, tax: 86756, ins: 35272, ew: 16154, kit: 5073 },
+    { name: "ZXI AGS", ex: 618353, tax: 95226, ins: 36547, ew: 16954, kit: 5073 },
+    { name: "ZXI+ AGS", ex: 675353, tax: 104004, ins: 38095, ew: 17276, kit: 5073 },
+    { name: "VXI CNG", ex: 597853, tax: 92069, ins: 41110, ew: 16166, kit: 5073 }
+  ],
+  "WAGON R": [
+    { name: "LXI", ex: 498853, tax: 71336, ins: 30054, ew: 13558, kit: 5973 },
+    { name: "VXI", ex: 554353, tax: 85370, ins: 31401, ew: 14608, kit: 5973 },
+    { name: "VXI AGS", ex: 599352, tax: 92300, ins: 29839, ew: 15776, kit: 5973 },
+    { name: "ZXI", ex: 598353, tax: 92146, ins: 32388, ew: 15281, kit: 5973 },
+    { name: "ZXI+", ex: 641352, tax: 98768, ins: 30267, ew: 16686, kit: 5973 },
+    { name: "ZXI AGS", ex: 643352, tax: 99076, ins: 30284, ew: 16449, kit: 5973 },
+    { name: "ZXI+ AGS", ex: 686353, tax: 105698, ins: 31022, ew: 17854, kit: 5973 },
+    { name: "LXI CNG", ex: 593852, tax: 91453, ins: 39461, ew: 15671, kit: 5973 },
+    { name: "VXI CNG", ex: 649352, tax: 100000, ins: 41127, ew: 16721, kit: 5973 }
+  ],
+  "SWIFT": [
+    { name: "LXI", ex: 584088, tax: 89950, ins: 33601, ew: 16055, kit: 7823 },
+    { name: "VXI", ex: 668089, tax: 102886, ins: 35340, ew: 18085, kit: 7823 },
+    { name: "VXI (O)", ex: 694089, tax: 106890, ins: 36241, ew: 19069, kit: 7823 },
+    { name: "ZXI", ex: 762089, tax: 117362, ins: 38524, ew: 20910, kit: 7823 },
+    { name: "ZXI+", ex: 829088, tax: 127680, ins: 38707, ew: 23045, kit: 7823 },
+    { name: "VXI AGS", ex: 713088, tax: 109816, ins: 36588, ew: 19659, kit: 7823 },
+    { name: "ZXI AGS", ex: 807088, tax: 124292, ins: 38545, ew: 22172, kit: 7823 },
+    { name: "ZXI+ AGS", ex: 874089, tax: 134610, ins: 41010, ew: 24308, kit: 7823 },
+    { name: "VXI CNG", ex: 757588, tax: 116669, ins: 36660, ew: 20662, kit: 7823 },
+    { name: "ZXI CNG", ex: 851588, tax: 131145, ins: 38660, ew: 23175, kit: 7823 }
+  ],
+  "DZIRE": [
+    { name: "LXI", ex: 630553, tax: 97105, ins: 30053, ew: 17052, kit: 10295 },
+    { name: "VXI", ex: 727052, tax: 111966, ins: 33725, ew: 19065, kit: 10295 },
+    { name: "ZXI", ex: 827652, tax: 127458, ins: 34016, ew: 22026, kit: 10295 },
+    { name: "ZXI+", ex: 896253, tax: 138023, ins: 36882, ew: 24415, kit: 10295 },
+    { name: "VXI AGS", ex: 772053, tax: 118896, ins: 33183, ew: 21016, kit: 10295 },
+    { name: "ZXI AGS", ex: 872653, tax: 134389, ins: 35212, ew: 23002, kit: 10295 },
+    { name: "ZXI+ AGS", ex: 941252, tax: 144953, ins: 37472, ew: 24689, kit: 10295 },
+    { name: "VXI CNG", ex: 818053, tax: 125980, ins: 38903, ew: 21960, kit: 10295 },
+    { name: "ZXI CNG", ex: 918653, tax: 141473, ins: 40507, ew: 24922, kit: 10295 }
+  ],
+  "BREZZA": [
+    { name: "LXI 1.5L 6MT", ex: 834844, tax: 128566, ins: 36143, ew: 21806, kit: 15743 },
+    { name: "VXI 1.5L 6MT", ex: 930844, tax: 143350, ins: 38824, ew: 24320, kit: 15743 },
+    { name: "ZXI 1.5L 6MT", ex: 1054844, tax: 197256, ins: 41536, ew: 27990, kit: 15743 },
+    { name: "VXI 1.5L 6AT", ex: 1060843, tax: 198378, ins: 41567, ew: 27060, kit: 15743 },
+    { name: "ZXI 1.5L 6AT", ex: 1184844, tax: 221566, ins: 44570, ew: 30130, kit: 15743 },
+    { name: "ZXI+ 1.5L 6AT", ex: 1354843, tax: 253356, ins: 49024, ew: 35990, kit: 15743 },
+    { name: "LXI CNG 1.5L 6MT", ex: 939844, tax: 144736, ins: 38701, ew: 24426, kit: 15743 },
+    { name: "VXI CNG 1.5L 6MT", ex: 1018944, tax: 190543, ins: 39207, ew: 25043, kit: 15743 },
+    { name: "ZXI CNG 1.5L 6MT", ex: 1159844, tax: 216891, ins: 44688, ew: 29909, kit: 15743 }
+  ],
+  "ERTIGA": [
+    { name: "LXI", ex: 889944, tax: 137051, ins: 39562, ew: 23942, kit: 10214 },
+    { name: "VXI", ex: 995243, tax: 153267, ins: 41334, ew: 26098, kit: 10214 },
+    { name: "ZXI", ex: 1101443, tax: 205970, ins: 43925, ew: 28591, kit: 10214 },
+    { name: "ZXI+", ex: 1179044, tax: 220481, ins: 45544, ew: 31530, kit: 10214 },
+    { name: "VXI AT", ex: 1130244, tax: 211356, ins: 45024, ew: 30479, kit: 10214 },
+    { name: "ZXI AT", ex: 1236444, tax: 231215, ins: 46508, ew: 33370, kit: 10214 },
+    { name: "VXI CNG", ex: 1093743, tax: 204530, ins: 49500, ew: 27091, kit: 10214 },
+    { name: "ZXI CNG", ex: 1199944, tax: 224390, ins: 51500, ew: 29079, kit: 10214 }
+  ],
+  "VICTORIS": [
+    { name: "LXI", ex: 1049844, tax: 196321, ins: 48835, ew: 27077, kit: 15511 },
+    { name: "VXI", ex: 1184844, tax: 221566, ins: 55125, ew: 29909, kit: 15511 },
+    { name: "ZXI", ex: 1361843, tax: 254665, ins: 63690, ew: 36037, kit: 15511 },
+    { name: "ZXI+", ex: 1538844, tax: 287764, ins: 71770, ew: 38427, kit: 15521 },
+    { name: "VXI AT", ex: 1340843, tax: 250738, ins: 62673, ew: 35081, kit: 15511 },
+    { name: "ZXI AT", ex: 1517844, tax: 283837, ins: 71238, ew: 40144, kit: 15511 },
+    { name: "ZXI+ AT", ex: 1733844, tax: 324229, ins: 81205, ew: 39872, kit: 15511 },
+    { name: "ZXI ST. HYD ECVT", ex: 1784843, tax: 333766, ins: 84157, ew: 48805, kit: 15511 },
+    { name: "LXI CNG", ex: 1154844, tax: 215956, ins: 53674, ew: 32025, kit: 15511 },
+    { name: "VXI CNG", ex: 1289844, tax: 241201, ins: 59964, ew: 31435, kit: 15511 }
+  ]
+};
+
+const fmt = (num) => "₹" + Math.round(num).toLocaleString('en-IN');
+
+function init() {
+  const modelSel = document.getElementById("modelSelect");
+  modelSel.innerHTML = "";
+  Object.keys(PRICING_DATA).forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    modelSel.appendChild(opt);
+  });
+  populateVariants();
+}
+
+function populateVariants() {
+  const m = document.getElementById("modelSelect").value;
+  const vSel = document.getElementById("variantSelect");
+  vSel.innerHTML = "";
+  PRICING_DATA[m].forEach((v, idx) => {
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.textContent = v.name;
+    vSel.appendChild(opt);
+  });
+  calculateQuotation();
+}
+
+function calculateQuotation() {
+  const m = document.getElementById("modelSelect").value;
+  const vIdx = document.getElementById("variantSelect").value;
+  const car = PRICING_DATA[m][vIdx];
+  if (!car) return;
+
+  document.getElementById("printCarTitle").textContent = `Vehicle: ${m} - ${car.name}`;
+  document.getElementById("dispExShowroom").textContent = fmt(car.ex);
+  document.getElementById("dispTax").textContent = fmt(car.tax);
+  document.getElementById("dispIns").textContent = fmt(car.ins);
+  document.getElementById("dispEw").textContent = fmt(car.ew);
+  document.getElementById("dispMsga").textContent = fmt(car.kit);
+
+  let total = car.ex;
+  if (document.getElementById("chkTax").checked) total += car.tax;
+  if (document.getElementById("chkIns").checked) total += car.ins;
+  if (document.getElementById("chkPr").checked) total += 2035; // 1535 PR + 500 Hyp
+  if (document.getElementById("chkFastag").checked) total += 650;
+  if (document.getElementById("chkEw").checked) total += car.ew;
+  if (document.getElementById("chkMsga").checked) total += car.kit;
+  if (document.getElementById("chkMsr").checked) total += 885;
+
+  const discount = Number(document.getElementById("inpDiscount").value) || 0;
+  total = Math.max(0, total - discount);
+
+  document.getElementById("dispTotal").textContent = fmt(total);
+}
+
+function resetForm() {
+  document.getElementById("custName").value = "";
+  document.getElementById("custPhone").value = "";
+  document.getElementById("inpDiscount").value = 0;
+  document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = true);
+  calculateQuotation();
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
